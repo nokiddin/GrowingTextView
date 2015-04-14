@@ -351,9 +351,50 @@
 {
     if ([self respondsToSelector:@selector(snapshotViewAfterScreenUpdates:)])
     {
-        return ceilf([self.internalTextView sizeThatFits:self.internalTextView.frame.size].height);
+        // This is the code for iOS 7. contentSize no longer returns the correct value, so
+        // we have to calculate it.
+        //
+        // This is partly borrowed from HPGrowingTextView, but I've replaced the
+        // magic fudge factors with the calculated values (having worked out where
+        // they came from)
+        
+        CGRect frame = self.internalTextView.bounds;
+        
+        // Take account of the padding added around the text.
+        
+        UIEdgeInsets textContainerInsets = self.internalTextView.textContainerInset;
+        UIEdgeInsets contentInsets = self.internalTextView.contentInset;
+        
+        CGFloat leftRightPadding = textContainerInsets.left + textContainerInsets.right + self.internalTextView.textContainer.lineFragmentPadding * 2 + contentInsets.left + contentInsets.right;
+        CGFloat topBottomPadding = textContainerInsets.top + textContainerInsets.bottom + contentInsets.top + contentInsets.bottom;
+        
+        frame.size.width -= leftRightPadding;
+        frame.size.height -= topBottomPadding;
+        
+        NSString *textToMeasure = self.internalTextView.text;
+        if ([textToMeasure hasSuffix:@"\n"])
+        {
+            textToMeasure = [NSString stringWithFormat:@"%@-", self.internalTextView.text];
+        }
+        
+        // NSString class method: boundingRectWithSize:options:attributes:context is
+        // available only on ios7.0 sdk.
+        
+        NSMutableParagraphStyle *paragraphStyle = [[NSMutableParagraphStyle alloc] init];
+        [paragraphStyle setLineBreakMode:NSLineBreakByWordWrapping];
+        
+        NSDictionary *attributes = @{ NSFontAttributeName: self.font, NSParagraphStyleAttributeName : paragraphStyle };
+        
+        CGRect size = [textToMeasure boundingRectWithSize:CGSizeMake(CGRectGetWidth(frame), MAXFLOAT)
+                                                  options:NSStringDrawingUsesLineFragmentOrigin
+                                               attributes:attributes
+                                                  context:nil];
+        
+        CGFloat measuredHeight = ceilf(CGRectGetHeight(size) + topBottomPadding);
+        return measuredHeight;
     }
-    else {
+    else
+    {
         return self.internalTextView.contentSize.height;
     }
 }
