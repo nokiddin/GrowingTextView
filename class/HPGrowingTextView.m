@@ -346,7 +346,7 @@
 	}
 }
 
-// Code from apple developer forum - @Steve Krulewitz, @Mark Marszal, @Eric Silverberg
+// As commented by truculent in Issue #98 from https://github.com/HansPinckaers/GrowingTextView/issues/98
 - (CGFloat)measureHeight
 {
     if ([self respondsToSelector:@selector(snapshotViewAfterScreenUpdates:)])
